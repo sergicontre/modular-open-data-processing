@@ -1,12 +1,20 @@
 # Data processing with Apache Kafka, Spark, and PostgreSQL
 
-This project demonstrates a complete pipeline for ingesting, processing, and analyzing IoT sensor data using the following components:
+---
+
+## Functional Overview
+
+This project simulates a full data processing pipeline for IoT sensor data, covering real-time and batch analytics. Sensor readings are continuously generated and published to a Kafka topic. Spark Structured Streaming consumes this data in real time, performs aggregations (average temperature and humidity per city and minute), and writes the results to a PostgreSQL database. Additionally, a batch job processes historical CSV data to compute metrics, storing the outcome in a separate PostgreSQL table.
+
+This project demonstrates a complete pipeline for ingesting, processing, and analyzing data using the following components:
 
 - **Kafka**: for real-time ingestion of simulated sensor data.
 - **Spark**: for both real-time processing (Structured Streaming) and batch analysis of historical data.
 - **PostgreSQL**: for storing aggregated results.
 - **Kafka UI**: for inspecting topics and messages in Kafka.
 - **pgAdmin**: for visualizing PostgreSQL tables and running queries.
+
+![Architecture Diagram](diagram.png)
 
 ---
 
