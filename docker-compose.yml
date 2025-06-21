@@ -1,0 +1,74 @@
+version: "3.9"
+
+services:
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka:
+    image: bitnami/kafka:3.7.0
+    depends_on: [zookeeper]
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    ports: ["9092:9092"]
+  kafka-ui:
+      image: provectuslabs/kafka-ui:latest
+      ports:
+        - "8080:8080"
+      depends_on:
+        - kafka
+      environment:
+        - KAFKA_CLUSTERS_0_NAME=local
+        - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+        - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+  postgres:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=demo
+      - POSTGRES_PASSWORD=demo
+      - POSTGRES_DB=demo_iot
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+  spark:
+    image: bitnami/spark:3.5.0
+    depends_on: [kafka, postgres]
+    environment:
+      - SPARK_MODE=driver
+    volumes:
+      - ./spark_app:/opt/spark-app
+      - ./spark_data:/opt/spark-data
+    command: >
+      bash -c "/opt/bitnami/spark/bin/spark-submit
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.7.3
+      /opt/spark-app/spark_app.py"
+
+  producer:
+    build: ./producer
+    depends_on: [kafka]
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  pgadmin_data:
